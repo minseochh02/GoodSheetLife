@@ -1,0 +1,95 @@
+GoodSheetLife Overview
+
+Tech Stack
+
+Frontend
+
+Main
+
+- AppsScript
+  Management
+- Next.js
+- Tailwind CSS
+- TypeScript
+- Vercel
+
+Backend
+
+- FastAPI
+- Kakao Rest API
+
+DB
+
+- Supabase
+
+Logics
+
+Profile Management
+
+- Sign Up (only via Kakao)
+- Sign In
+- Sign Out
+- Delete Account
+
+Subscription Management
+
+- Invite Friend
+- Cancel Subscription
+
+Send Message
+
+- Send Message to Friend
+- Schedule Message
+- Cancel Scheduled Message
+
+UX FLOW
+
+Visit Homepage
+Click on Create New Account and move to /signup
+
+Click on Continue with Google and chose an account
+
+Click on Get a Copy of Template and move to spreadsheet
+
+On Spreadsheet, click on GoodSheetLife > Connect to GoodSheetLife, opening up modal of iframe /signup?sheet_id={spreadsheet_id}&script_id={appsscript_id}&email={user_email}
+
+On /signup, check if user exists in supabase via email
+
+if user exists, create app in supabase and redirect to /mypage
+
+TODO: handle edge cases and error, do not implement yet.
+
+so for /signup page, when loaded,
+
+Check URL Params
+
+If email, sheet_id, script_id exist: (Scenario A)
+  a. Check if user exists in Supabase via email:
+
+    Exists: Show step 3 (Create app in supabase) → redirect to /mypage.
+
+    Doesn’t exist: Preserve params and show sign in with Google and say make sure they are using the same email(Step 1).
+
+  b. Validate sheet_id/script_id (e.g., API call to Google).
+  
+No URL Params
+
+Check auth session: (Scenario B)
+  a. Authenticated:
+
+    Fetch user via auth.user().email.
+
+    User exists:
+
+      Has app? → Redirect to /mypage.
+
+      No app → Show "Connect Spreadsheet" step 2 (guide to get template).
+
+    No user record: Show signup form (Step 1).
+
+  b. Not authenticated: Show signup form (Step 1).
+
+
+Dashboard:
+show user data
+show connect to KakaoTalk

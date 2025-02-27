@@ -1,0 +1,114 @@
+/
+Home
+
+displays GoodSheetLife logo and 3 buttons (Login, Signup, Demo)
+
+/signup
+
+displays signup page with copy spreadsheet button
+
+/login
+PARAM: NULL || "user_id"
+
+displays login page with Kakao login button
+if user_id is provided, display the page as a modal
+
+/mypage
+
+displays mypage with user's profile information and subscription information
+
+- name
+- profile_pic
+- message_count
+- sheet_id
+- created_at
+
+/mypage/edit
+
+displays edit page with user's profile information and subscription information
+
+- name
+- profile_pic
+- subscriptions
+- delete account
+
+/subscriptions?[user_id]
+
+displays a copy and pasteable link to the subscription page
+
+/subscriptions/edit?[user_id]
+
+displays a editable subscription page that will be displayed
+
+/subscriptions/add?[user_id]
+
+displays add subscription page with the user information of which the subscriber is subscribing to
+
+- name
+- profile_pic
+
+/subscriptions/remove?[user_id]
+
+displays a remove subscription page with the user information of which the subscriber is subscribing to
+
+
+
+API Endpoints:
+Redirects to the FastAPI endpoints
+
+________________________________________________________
+GET /api/kakao/subscribers
+PARAM: "user_id"
+BODY: NULL
+
+RETURNS:
+{
+    "user_id": "user_id",
+    "subscribers": [
+        {
+            "user_id": "user_id",
+            "name": "name",
+            "profile_pic": "profile_pic"
+        }
+    ]
+}
+
+________________________________________________________
+GET /api/kakao/invite-status
+PARAM: "user_id"
+BODY: NULL
+
+RETURNS:
+{
+    "user_id": "user_id",
+    "invite_status": [
+        {
+            "friend_id": "friend_id",
+            "name": "name",
+            "profile_pic": "profile_pic",
+            "status": 0 || 1 || 2
+        }
+    ]
+}
+0 - not subscribed
+1 - subscribed
+2 - blocked
+
+
+________________________________________________________
+POST /api/kakao/send-message
+PARAM: NULL
+BODY:
+{
+    "user_id": "user_id",
+    "message": "message",
+    "recipient": "kakao_id" || "self"
+}
+sends a message to the subscribers or the user
+
+RETURNS:
+{
+    "status": "success" || "error"
+    "error": "error message"
+}
+

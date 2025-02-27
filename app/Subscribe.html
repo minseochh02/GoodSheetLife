@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<base target="_top" />
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				padding: 20px;
+				max-width: 600px;
+				margin: 0 auto;
+			}
+			.card {
+				border: 1px solid #ddd;
+				border-radius: 8px;
+				padding: 20px;
+				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			}
+			.title {
+				font-size: 20px;
+				font-weight: bold;
+				margin-bottom: 20px;
+			}
+			.section {
+				margin-bottom: 24px;
+			}
+			.section-title {
+				font-size: 16px;
+				font-weight: 500;
+				margin-bottom: 12px;
+			}
+			.column-badges {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-bottom: 16px;
+			}
+			.badge {
+				padding: 6px 12px;
+				border-radius: 16px;
+				border: 1px solid #ddd;
+				cursor: pointer;
+				background: white;
+				transition: all 0.2s;
+			}
+			.badge.selected {
+				background: #0066cc;
+				color: white;
+				border-color: #0066cc;
+			}
+			.available-columns {
+				margin-bottom: 16px;
+			}
+			.column-chip {
+				display: inline-block;
+				padding: 4px 8px;
+				background: #f0f0f0;
+				border-radius: 4px;
+				margin: 4px;
+				cursor: pointer;
+			}
+			select {
+				width: 100%;
+				max-width: 300px;
+				padding: 8px;
+				border-radius: 4px;
+				border: 1px solid #ddd;
+				margin-bottom: 16px;
+			}
+			.message-input {
+				width: 100%;
+				padding: 8px;
+				border-radius: 4px;
+				border: 1px solid #ddd;
+				margin-bottom: 16px;
+				min-height: 60px;
+				resize: vertical;
+			}
+			.preview-message {
+				background: #f5f5f5;
+				padding: 12px;
+				border-radius: 4px;
+				margin-bottom: 16px;
+				font-size: 14px;
+			}
+			.button {
+				background: #0066cc;
+				color: white;
+				border: none;
+				padding: 8px 24px;
+				border-radius: 4px;
+				cursor: pointer;
+				float: right;
+			}
+			.button:hover {
+				background: #0052a3;
+			}
+			.sheet-name {
+				color: #666;
+				font-size: 12px;
+				margin-left: 4px;
+			}
+			.help-text {
+				font-size: 12px;
+				color: #666;
+				margin-top: 8px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="card">
+			<div class="title">Subscribe to Event Notifications</div>
+
+			<div class="section">
+				<div class="section-title">Select Date Column</div>
+				<div class="column-badges" id="columnBadges">
+					<? for (var i = 0; i < dateColumns.length; i++) { 
+             var col = dateColumns[i]; ?>
+					<button
+						class="badge"
+						data-sheet="<?= col.sheetName ?>"
+						data-column="<?= col.columnName ?>"
+						data-index="<?= col.columnIndex ?>"
+						onclick="toggleColumn(this)"
+					>
+						<?= col.columnName ?>
+						<span class="sheet-name">(<?= col.sheetName ?>)</span>
+					</button>
+					<? } ?>
+				</div>
+			</div>
+
+			<div class="section">
+				<div class="section-title">Available Data Fields</div>
+				<div id="availableColumns" class="available-columns">
+					Select a date column to see available fields
+				</div>
+				<div class="help-text">Click a field to add it to your message</div>
+			</div>
+
+			<div class="section">
+				<div class="section-title">Notification Timing</div>
+				<select id="notificationTiming" onchange="updatePreview()">
+					<option value="1-day">1 Day Before</option>
+					<option value="3-days">3 Days Before</option>
+					<option value="1-week">1 Week Before</option>
+					<option value="2-weeks">2 Weeks Before</option>
+					<option value="1-month">1 Month Before</option>
+				</select>
+			</div>
+
+			<div class="section">
+				<div class="section-title">Notification Message</div>
+				<textarea
+					id="notificationMessage"
+					class="message-input"
+					placeholder="Enter your notification message..."
+					onkeyup="updatePreview()"
+				></textarea>
+				<div class="help-text">
+					Use {columnName} to include data from other columns
+				</div>
+			</div>
+
+			<div class="section">
+				<div class="section-title">Preview</div>
+				<div class="preview-message">
+					<span id="previewMessage"
+						>Select columns, timing, and enter a message to see preview</span
+					>
+				</div>
+			</div>
+
+			<button class="button" onclick="subscribe()">Subscribe</button>
+		</div>
+
+		<script>
+			let selectedColumn = null;
+			let availableColumns = [];
+			let isInputFocused = false;
+
+			function toggleColumn(element) {
+				// Remove selection from previously selected column
+				const previouslySelected = document.querySelector(".badge.selected");
+				if (previouslySelected) {
+					previouslySelected.classList.remove("selected");
+				}
+
+				// If clicking the same element, deselect it
+				if (previouslySelected === element) {
+					selectedColumn = null;
+					updateAvailableColumns([]);
+					updatePreview();
+					return;
+				}
+
+				// Select new column
+				element.classList.add("selected");
+				selectedColumn = {
+					sheetName: element.dataset.sheet,
+					columnName: element.dataset.column,
+					columnIndex: parseInt(element.dataset.index),
+				};
+
+				// Get available columns for the selected sheet
+				google.script.run
+					.withSuccessHandler((columns) => {
+						availableColumns = columns;
+						updateAvailableColumns(columns);
+						updatePreview();
+					})
+					.getSheetColumns(selectedColumn.sheetName);
+
+				// Navigate to the selected sheet and select header
+				google.script.run.navigateToSheet(
+					selectedColumn.sheetName,
+					selectedColumn.columnIndex
+				);
+			}
+
+			function updateAvailableColumns(columns) {
+				const container = document.getElementById("availableColumns");
+				if (!columns || columns.length === 0) {
+					container.innerHTML = "Select a date column to see available fields";
+					return;
+				}
+
+				container.innerHTML = columns
+					.map(
+						(col) => `
+          <span class="column-chip" onclick="insertColumn('${col}')">${col}</span>
+        `
+					)
+					.join("");
+			}
+
+			function insertColumn(columnName) {
+				const messageInput = document.getElementById("notificationMessage");
+				const cursorPos = messageInput.selectionStart;
+				const textBefore = messageInput.value.substring(0, cursorPos);
+				const textAfter = messageInput.value.substring(cursorPos);
+
+				messageInput.value = textBefore + `{${columnName}}` + textAfter;
+				updatePreview();
+			}
+
+			function updatePreview() {
+				const timing = document.getElementById("notificationTiming").value;
+				const messageInput = document.getElementById("notificationMessage");
+				const previewElement = document.getElementById("previewMessage");
+
+				if (!selectedColumn) {
+					previewElement.textContent = "Select a column to see preview";
+					return;
+				}
+
+				let message = messageInput.value;
+				if (!message && !isInputFocused) {
+					message = `Reminder: {${selectedColumn.columnName}} event`;
+					messageInput.value = message;
+				}
+
+				// Show preview with sample data
+				google.script.run
+					.withSuccessHandler((previewText) => {
+						previewElement.textContent = previewText;
+					})
+					.generatePreview(selectedColumn.sheetName, message || "");
+			}
+
+			document.addEventListener("DOMContentLoaded", function () {
+				const messageInput = document.getElementById("notificationMessage");
+
+				messageInput.addEventListener("focus", function () {
+					isInputFocused = true;
+				});
+
+				messageInput.addEventListener("blur", function () {
+					isInputFocused = false;
+					updatePreview();
+				});
+			});
+
+			function subscribe() {
+				const timing = document.getElementById("notificationTiming").value;
+				const message = document.getElementById("notificationMessage").value;
+
+				if (!selectedColumn) {
+					alert("Please select a column");
+					return;
+				}
+
+				if (!message) {
+					alert("Please enter a notification message");
+					return;
+				}
+
+				google.script.run
+					.withSuccessHandler(() => {
+						google.script.host.close();
+					})
+					.withFailureHandler((error) => {
+						console.error("Error:", error);
+						alert("Failed to subscribe to notifications");
+					})
+					.processSubscription(selectedColumn, timing, message);
+			}
+		</script>
+	</body>
+</html>

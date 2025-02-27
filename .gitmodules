@@ -1,0 +1,3 @@
+[submodule "goosl_vercel"]
+	path = goosl_vercel
+	url = https://github.com/minseochh02/goodsheet_vercel.git

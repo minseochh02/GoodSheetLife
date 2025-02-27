@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<base target="_top" />
+		<style>
+			.trigger-table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 10px;
+			}
+			.trigger-table th,
+			.trigger-table td {
+				border: 1px solid #ddd;
+				padding: 8px;
+				text-align: left;
+			}
+			.trigger-table th {
+				background-color: #f2f2f2;
+			}
+			.delete-btn {
+				color: red;
+				cursor: pointer;
+				font-weight: bold;
+			}
+			.no-triggers {
+				text-align: center;
+				padding: 20px;
+				color: #666;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="triggers-container">
+			<table class="trigger-table">
+				<thead>
+					<tr>
+						<th>Sheet</th>
+						<th>Column</th>
+						<th>Timing</th>
+						<th>Status</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody id="triggers-body">
+					<!-- Triggers will be inserted here -->
+				</tbody>
+			</table>
+		</div>
+
+		<script>
+			function loadTriggers() {
+				google.script.run
+					.withSuccessHandler(displayTriggers)
+					.withFailureHandler(handleError)
+					.getTriggersList();
+			}
+
+			function displayTriggers(triggers) {
+				const tbody = document.getElementById("triggers-body");
+				if (!triggers || triggers.length === 0) {
+					tbody.innerHTML =
+						'<tr><td colspan="5" class="no-triggers">No active triggers found</td></tr>';
+					return;
+				}
+
+				tbody.innerHTML = triggers
+					.map(
+						(trigger) => `
+        <tr>
+          <td>${trigger.sheetName}</td>
+          <td>${trigger.columnName}</td>
+          <td>${trigger.timing}</td>
+          <td>${trigger.status}</td>
+          <td>
+            <span class="delete-btn" onclick="deleteTrigger('${trigger.rowIndex}')">×</span>
+          </td>
+        </tr>
+      `
+					)
+					.join("");
+			}
+
+			function deleteTrigger(rowIndex) {
+				if (confirm("Are you sure you want to delete this trigger?")) {
+					google.script.run
+						.withSuccessHandler(() => loadTriggers())
+						.withFailureHandler(handleError)
+						.deleteTrigger(rowIndex);
+				}
+			}
+
+			function handleError(error) {
+				console.error("Error:", error);
+				alert("An error occurred. Please try again.");
+			}
+
+			// Load triggers when the page loads
+			window.onload = loadTriggers;
+		</script>
+	</body>
+</html>
